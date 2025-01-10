@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from 'react';
+// src/components/CallbackHandler.tsx
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const CallbackHandler: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [error, setError] = useState<string | null>(null);
+  const { setAuthState } = useAuth();
+  const processedCode = useRef<string | null>(null);
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Get the full search string including query parameters
         const searchParams = new URLSearchParams(location.search);
         const code = searchParams.get('code');
 
@@ -18,39 +21,55 @@ const CallbackHandler: React.FC = () => {
           return;
         }
 
-        console.log('Received code:', code); // Debug log
+        // Prevent processing the same code multiple times
+        if (processedCode.current === code) {
+          return;
+        }
+        processedCode.current = code;
+
+        console.log('Sending code to backend:', code);
 
         const response = await fetch('http://localhost:8000/auth/google', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          credentials: 'include',
           body: JSON.stringify({ code }),
         });
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.detail || 'Login failed');
+          // Only set error if it's not a duplicate token error
+          if (!errorData.detail?.includes('Bad Request')) {
+            throw new Error(errorData.detail || 'Login failed');
+          }
+          return;
         }
 
-        const userData = await response.json();
-        console.log('Received user data:', userData); // Debug log
+        const data = await response.json();
+        console.log('Received response:', data);
 
-        if (!userData.id || !userData.email || !userData.name) {
-          throw new Error('Invalid user data received');
+        if (!data.user || !data.access_token || !data.refresh_token) {
+          throw new Error('Invalid response data');
         }
 
-        localStorage.setItem('user', JSON.stringify(userData));
+        setAuthState(data.user, {
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          token_type: data.token_type,
+        });
+        
         navigate('/dashboard', { replace: true });
       } catch (error) {
         console.error('Login error:', error);
-        setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+        if (error instanceof Error && !error.message.includes('Bad Request')) {
+          setError(error.message || 'An unexpected error occurred');
+        }
       }
     };
 
     handleCallback();
-  }, [location.search, navigate]);
+  }, [location.search, navigate, setAuthState]);
 
   if (error) {
     return (
@@ -67,9 +86,9 @@ const CallbackHandler: React.FC = () => {
   }
 
   return (
-    <div className="p-4 flex justify-center items-center min-h-screen">
+    <div className="flex justify-center items-center min-h-screen">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
         <p>Processing login...</p>
       </div>
     </div>

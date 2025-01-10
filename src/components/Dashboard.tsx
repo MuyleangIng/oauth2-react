@@ -1,57 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-
-interface User {
-  id: number;
-  email: string;
-  name: string;
-}
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Dashboard: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const userString = localStorage.getItem('user');
-    
-    if (!userString) {
-      navigate('/', { replace: true });
-      return;
-    }
-
-    try {
-      const userData = JSON.parse(userString);
-      if (!userData.id || !userData.email || !userData.name) {
-        throw new Error('Invalid user data');
-      }
-      setUser(userData);
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      localStorage.removeItem('user');
-      navigate('/', { replace: true });
-    }
-  }, [navigate]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    navigate('/', { replace: true });
-  };
+  const { user, logout } = useAuth();
 
   if (!user) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <Navigate to="/login" replace />;
   }
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="bg-white shadow-lg rounded-lg p-6">
-        <h2 className="text-2xl font-bold mb-4">Welcome, {user.name}!</h2>
+        <h2 className="text-2xl font-bold mb-4">Welcome, {user.username}!</h2>
         <p className="text-gray-600 mb-6">Email: {user.email}</p>
         <button
-          onClick={handleLogout}
+          onClick={logout}
           className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
         >
           Logout
