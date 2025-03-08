@@ -29,7 +29,7 @@ const CallbackHandler: React.FC = () => {
 
         console.log('Sending code to backend:', code);
 
-        const response = await fetch('http://localhost:8000/auth/google', {
+        const response = await fetch('http://localhost:8000/api/google/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

@@ -11,7 +11,7 @@ const LoginPage: React.FC = () => {
   const { setAuthState } = useAuth();
 
   const handleGoogleLogin = () => {
-    const clientId = "get this from google";
+    const clientId = "864319511903-9ppi277qfje6aa3nt2obh0d1tohlro2m.apps.googleusercontent.com";
     const redirectUri = `${window.location.origin}/auth/google/callback`;
     const scope = 'email profile';
     
